@@ -1,0 +1,10 @@
+name: word_search_engine
+description: 코토다망 최장 단어 탐색 엔진 (PRD_Mobile.md §8 1단계) — 순수 Dart, Flutter 비의존.
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.13.2
+
+dev_dependencies:
+  test: ^1.25.0

@@ -1,0 +1,188 @@
+import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
+import 'package:word_search_engine/word_search_engine.dart';
+
+import 'character_avatar.dart';
+
+const double _kMinBodyFont = 16;
+const double _kLetterSlotFont = 20;
+const double _kChipRowHeight = 56;
+const int _kMaxHandSize = 4;
+
+/// PRD_Mobile.md FR-1 — 덱 편집 페이지에서 넘어온 덱(최대 12명)을 대상으로, 판 상태를
+/// 입력해 두 종류의 결과를 나눠 보여준다: 손패(최대 4명, 4~7글자)와 덱 전체(5~7글자,
+/// "이 덱으로 무엇까지 만들 수 있는지" 미리보기 — 실제 한 턴에 쓸 수 있는 문자는 손패
+/// 기준이지만, 덱 전체 기준은 덱빌딩 참고용).
+class WordSearchPage extends StatefulWidget {
+  final List<CharacterEntry> deck;
+  final WordSearchService service;
+
+  const WordSearchPage({super.key, required this.deck, required this.service});
+
+  @override
+  State<WordSearchPage> createState() => _WordSearchPageState();
+}
+
+class _WordSearchPageState extends State<WordSearchPage> {
+  final _boardController = TextEditingController();
+  final Set<String> _handIds = {};
+  Map<int, SearchGroup>? _handGroups;
+  Map<int, SearchGroup>? _deckGroups;
+
+  @override
+  void initState() {
+    super.initState();
+    _boardController.addListener(_convertBoardInputToKana);
+  }
+
+  // 한글 IME로 타이핑해도 히라가나로 바로 보이도록 자동 변환한다. 조합 중인 음절은
+  // 건드리지 않는다(composing 도중 텍스트를 바꾸면 IME 입력이 깨진다) — 한 음절이
+  // 완성돼 composing이 비워질 때만 변환한다.
+  void _convertBoardInputToKana() {
+    final value = _boardController.value;
+    if (value.composing.isValid) return;
+    final converted = convertHangulToKana(value.text);
+    if (converted == value.text) return;
+    _boardController.value = value.copyWith(
+      text: converted,
+      selection: TextSelection.collapsed(offset: converted.length),
+      composing: TextRange.empty,
+    );
+  }
+
+  List<CharacterEntry> get _hand =>
+      widget.deck.where((c) => _handIds.contains(c.id)).toList();
+
+  // 데스크톱 `_boardCells`(MainWindow.xaml.cs)와 같은 개념 — 7칸 판에 이미 놓인 글자.
+  // '_'나 공백은 빈칸으로 취급한다.
+  List<String?> _parseBoard(String text) {
+    final runes = text.runes.take(7).toList();
+    return List<String?>.generate(7, (i) {
+      if (i >= runes.length) return null;
+      final cell = String.fromCharCode(runes[i]);
+      return (cell == '_' || cell.trim().isEmpty) ? null : cell;
+    });
+  }
+
+  void _toggleHand(String characterId) {
+    setState(() {
+      if (_handIds.contains(characterId)) {
+        _handIds.remove(characterId);
+        return;
+      }
+      if (_handIds.length >= _kMaxHandSize) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(const SnackBar(content: Text('손패는 최대 4명까지 선택할 수 있습니다.')));
+        return;
+      }
+      _handIds.add(characterId);
+    });
+  }
+
+  void _runSearch() {
+    final board = _parseBoard(_boardController.text);
+    setState(() {
+      // 손패: 최대 4명, 판이 비어 있으면 4글자까지만 나온다(엔진 기본 maximumPlacements=4).
+      _handGroups = widget.service.findWordsByLength(board, _hand);
+      // 덱 전체: 최대 12명이라 판이 비어 있어도 더 긴 단어를 채울 여지가 있다 — 5글자부터,
+      // 배치 상한도 7로 올려 "이 덱으로 뭘 만들 수 있는지" 전체를 본다.
+      _deckGroups = widget.service.findWordsByLength(
+        board,
+        widget.deck,
+        minimumLength: 5,
+        maximumPlacements: 7,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('단어 검색')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text('판 입력 (7칸, 빈칸은 비우거나 _)',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: _kMinBodyFont)),
+          const SizedBox(height: 4),
+          TextField(
+            controller: _boardController,
+            style: const TextStyle(fontSize: _kLetterSlotFont),
+            decoration: const InputDecoration(
+              hintText: '예: あい__かん_ (한글로 쳐도 자동 변환)',
+              isDense: true,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text('손패 선택 (${_handIds.length}/$_kMaxHandSize, 덱 ${widget.deck.length}명 중)',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: _kMinBodyFont)),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: _kChipRowHeight,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: widget.deck
+                  .map((c) => Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: SelectableCharacterAvatar(
+                          character: c,
+                          selected: _handIds.contains(c.id),
+                          onTap: () => _toggleHand(c.id),
+                        ),
+                      ))
+                  .toList(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 48,
+            child: ElevatedButton.icon(
+              onPressed: _runSearch,
+              icon: const Icon(Symbols.search_rounded, fill: 1),
+              label: const Text('검색', style: TextStyle(fontSize: _kMinBodyFont)),
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (_handGroups != null) ..._buildResultSections('손패 기준 (${_hand.length}명)', _handGroups!),
+          if (_deckGroups != null) ..._buildResultSections('덱 기준 (${widget.deck.length}명)', _deckGroups!),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildResultSections(String title, Map<int, SearchGroup> groups) {
+    final lengths = groups.keys.toList()..sort((a, b) => b.compareTo(a));
+    return [
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: _kLetterSlotFont)),
+      ),
+      for (final length in lengths) _buildLengthTile(length, groups[length]!),
+    ];
+  }
+
+  Widget _buildLengthTile(int length, SearchGroup group) {
+    return Card(
+      child: ExpansionTile(
+        title: Text('$length글자 (${group.results.length}개)', style: const TextStyle(fontSize: _kMinBodyFont)),
+        children: group.results.isEmpty
+            ? const [Padding(padding: EdgeInsets.all(12), child: Text('결과 없음'))]
+            : group.results
+                .map((r) => ListTile(
+                      dense: true,
+                      title: Text(r.word, style: const TextStyle(fontSize: _kLetterSlotFont)),
+                      trailing: Text('콤보 ${r.comboCount}'),
+                    ))
+                .toList(),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _boardController.removeListener(_convertBoardInputToKana);
+    _boardController.dispose();
+    super.dispose();
+  }
+}
