@@ -10,7 +10,7 @@ const double _kChipRowHeight = 56;
 const int _kMaxHandSize = 4;
 
 /// PRD_Mobile.md FR-1 — 덱 편집 페이지에서 넘어온 덱(최대 12명)을 대상으로, 판 상태를
-/// 입력해 두 종류의 결과를 나눠 보여준다: 손패(최대 4명, 4~7글자)와 덱 전체(5~7글자,
+/// 입력해 두 종류의 결과를 나눠 보여준다: 손패(최대 4명, 5~7글자)와 덱 전체(4~7글자,
 /// "이 덱으로 무엇까지 만들 수 있는지" 미리보기 — 실제 한 턴에 쓸 수 있는 문자는 손패
 /// 기준이지만, 덱 전체 기준은 덱빌딩 참고용).
 class WordSearchPage extends StatefulWidget {
@@ -53,15 +53,17 @@ class _WordSearchPageState extends State<WordSearchPage> {
   List<CharacterEntry> get _hand =>
       widget.deck.where((c) => _handIds.contains(c.id)).toList();
 
-  // 데스크톱 `_boardCells`(MainWindow.xaml.cs)와 같은 개념 — 7칸 판에 이미 놓인 글자.
-  // '_'나 공백은 빈칸으로 취급한다.
+  // 데스크톱 `_boardCells`(MainWindow.xaml.cs)와 같은 개념 — 이미 놓인 글자.
+  // '_'나 공백은 빈칸으로 취급한다. 입력한 길이만큼만 배열을 만든다(7칸으로 뒤를
+  // null 패딩하면, 검색 엔진이 그 패딩까지 "빈 슬롯"으로 보고 실제로 안 친 자리에서도
+  // 창을 밀어 매칭해 버려 — 예: "い　　た"(4글자)를 쳤는데 위치가 안 맞는 「けいたい」
+  // 같은 단어까지 걸리는 오탐이 생겼다).
   List<String?> _parseBoard(String text) {
     final runes = text.runes.take(7).toList();
-    return List<String?>.generate(7, (i) {
-      if (i >= runes.length) return null;
-      final cell = String.fromCharCode(runes[i]);
-      return (cell == '_' || cell.trim().isEmpty) ? null : cell;
-    });
+    return runes
+        .map((r) => String.fromCharCode(r))
+        .map((cell) => (cell == '_' || cell.trim().isEmpty) ? null : cell)
+        .toList();
   }
 
   void _toggleHand(String characterId) {
@@ -83,14 +85,17 @@ class _WordSearchPageState extends State<WordSearchPage> {
   void _runSearch() {
     final board = _parseBoard(_boardController.text);
     setState(() {
-      // 손패: 최대 4명, 판이 비어 있으면 4글자까지만 나온다(엔진 기본 maximumPlacements=4).
-      _handGroups = widget.service.findWordsByLength(board, _hand);
-      // 덱 전체: 최대 12명이라 판이 비어 있어도 더 긴 단어를 채울 여지가 있다 — 5글자부터,
+      // 손패: 최대 4명, 5글자부터(엔진 기본 maximumPlacements=4).
+      _handGroups = widget.service.findWordsByLength(
+        board,
+        _hand,
+        minimumLength: 5,
+      );
+      // 덱 전체: 최대 12명이라 판이 비어 있어도 더 긴 단어를 채울 여지가 있다 — 4글자부터,
       // 배치 상한도 7로 올려 "이 덱으로 뭘 만들 수 있는지" 전체를 본다.
       _deckGroups = widget.service.findWordsByLength(
         board,
         widget.deck,
-        minimumLength: 5,
         maximumPlacements: 7,
       );
     });

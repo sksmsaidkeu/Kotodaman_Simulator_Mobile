@@ -294,13 +294,26 @@ class _DeckRecognitionPageState extends State<DeckRecognitionPage> {
 
   Widget _buildPickImage() {
     return Center(
-      child: SizedBox(
-        height: _kMinTouchTarget + 8,
-        child: ElevatedButton.icon(
-          onPressed: _pickImage,
-          icon: const Icon(Symbols.photo_library_rounded, fill: 1),
-          label: const Text('갤러리에서 스크린샷 선택', style: TextStyle(fontSize: _kMinBodyFont)),
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            height: _kMinTouchTarget + 8,
+            child: ElevatedButton.icon(
+              onPressed: _pickImage,
+              icon: const Icon(Symbols.photo_library_rounded, fill: 1),
+              label: const Text('갤러리에서 스크린샷 선택', style: TextStyle(fontSize: _kMinBodyFont)),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.only(top: 12),
+            child: Text(
+              '인식 결과가 정확하지 않을 수 있습니다. 적용 전 확인 화면에서 꼭 검토해 주세요.',
+              style: TextStyle(fontSize: 11, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -399,6 +412,13 @@ class _DeckRecognitionPageState extends State<DeckRecognitionPage> {
   Widget _buildReview() {
     return Column(
       children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(12, 12, 12, 0),
+          child: Text(
+            '인식 결과가 정확하지 않을 수 있습니다. 적용 전 확인 화면에서 꼭 검토해 주세요.',
+            style: TextStyle(fontSize: 11, color: Colors.grey),
+          ),
+        ),
         Expanded(
           child: ListView.separated(
             padding: const EdgeInsets.all(12),
