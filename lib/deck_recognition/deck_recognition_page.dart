@@ -135,17 +135,14 @@ class _DeckRecognitionPageState extends State<DeckRecognitionPage> {
   }
 
   Future<void> _runRecognition(Rect gridRect) async {
-    debugPrint('[RECOG] template build start');
     setState(() => _progressLabel = '캐릭터 템플릿 준비 중... (최초 1회, 다소 걸릴 수 있음)');
     final templates = await TemplateDescriptorCache.load(
       widget.characters,
       onProgress: (done, total) {
-        if (done % 200 == 0 || done == total) debugPrint('[RECOG] template $done/$total');
         if (done % 50 != 0 && done != total) return;
         setState(() => _progressLabel = '템플릿 준비 중... $done/$total');
       },
     );
-    debugPrint('[RECOG] template build done, count=${templates.length}');
 
     final templatesById = {for (final t in templates) t.id: t};
     final attributeById = {for (final c in widget.characters) c.id: c.attribute};
@@ -192,7 +189,6 @@ class _DeckRecognitionPageState extends State<DeckRecognitionPage> {
 
     final orb = cv.ORB.create(nFeatures: 600);
     for (var i = 0; i < slots.length; i++) {
-      debugPrint('[RECOG] slot ${i + 1}/${slots.length} start');
       setState(() => _progressLabel = '슬롯 인식 중... ${i + 1}/${slots.length}');
       final s = slots[i];
       final slotRect = cv.Rect(s.left, s.top, s.width, s.height);
@@ -237,18 +233,10 @@ class _DeckRecognitionPageState extends State<DeckRecognitionPage> {
         q.dispose();
       }
       setState(() => _slotCandidates[i] = matches);
-      debugPrint(
-        '[RECOG] slot ${i + 1}/${slots.length} done, matches=${matches.length}, '
-        'attribute=${attributeEvidence.attribute.isEmpty ? "-" : attributeEvidence.attribute}'
-        '(${attributeEvidence.confidence.toStringAsFixed(2)}), '
-        'letter=${letterMatch == null ? "-" : "${letterMatch.letter}(${letterMatch.score.toStringAsFixed(2)})"}, '
-        'candidatesUsed=${templatesForSlot.length}',
-      );
     }
     fullMat.dispose();
     fullColorMat.dispose();
     orb.dispose();
-    debugPrint('[RECOG] all slots done');
 
     setState(() => _step = _Step.review);
   }
