@@ -46,3 +46,7 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# l10n.yaml generate:true가 lib/l10n/app_{ko,ja,en}.arb에서 매번 다시 만든다.
+lib/l10n/app_localizations*.dart
+/untranslated.txt

@@ -3,6 +3,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:word_search_engine/word_search_engine.dart';
 
 import 'app_theme.dart';
+import 'l10n/app_localizations.dart';
 
 String characterImagePath(String imageFileName) =>
     'assets/characters/CharacterImages/$imageFileName';
@@ -29,7 +30,7 @@ class RemovableCharacterAvatar extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Tooltip(
-        message: '${character.name} (탭해서 제외)',
+        message: AppLocalizations.of(context)!.removeCharacterTooltip(character.name),
         child: Stack(
           clipBehavior: Clip.none,
           children: [

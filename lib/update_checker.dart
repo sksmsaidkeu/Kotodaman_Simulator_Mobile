@@ -63,6 +63,10 @@ bool _isNewer(String remote, String current) {
 }
 
 /// APK를 내려받아 SHA256을 검증한 뒤 시스템 설치 화면을 띄운다(탭 한 번으로 설치, PRD FR-6).
+// ponytail: 아래 3개 Exception 메시지는 항상 한국어 — 이 함수는 BuildContext가 없어
+// AppLocalizations를 못 부른다(PRD_Mobile_i18n.md §4, 흔치 않은 다운로드/설치 실패 경로).
+// deck_editor_page.dart의 호출부(_startUpdate)는 이 문자열을 그대로 SnackBar에 붙여 보여준다 —
+// 다국어가 꼭 필요해지면 여기서 지역화 문자열 대신 에러 코드를 던지고 호출부에서 지역화할 것.
 Future<void> downloadAndInstallUpdate(
   MobileUpdateInfo update, {
   void Function(int received, int total)? onProgress,

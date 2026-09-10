@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:word_search_engine/word_search_engine.dart';
 
 import 'app_theme.dart';
+import 'l10n/app_localizations.dart';
 
 /// 데스크톱 `Models/CharacterCategories.All`과 같은 순서(등급) 그대로.
 const List<String> kGradeOptions = [
@@ -104,6 +105,7 @@ class _FilterSheetState extends State<_FilterSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     return DraggableScrollableSheet(
       initialChildSize: 0.75,
       minChildSize: 0.4,
@@ -116,30 +118,32 @@ class _FilterSheetState extends State<_FilterSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('필터', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 20)),
+              Text(loc.filterSheetTitle, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 20)),
               TextButton(
                 onPressed: () {
                   setState(widget.filter.clear);
                   widget.onChanged();
                 },
-                child: const Text('초기화', style: TextStyle(fontSize: 16)),
+                child: Text(loc.resetButton, style: const TextStyle(fontSize: 16)),
               ),
             ],
           ),
-          _buildSection('등급', kGradeOptions, widget.filter.grades),
-          _buildSection('속성', AppColors.attribute.keys.toList(), widget.filter.attributes),
-          _buildSection('종족', widget.allSpecies, widget.filter.species),
+          _buildSection(loc.gradeLabel, kGradeOptions, widget.filter.grades),
+          _buildSection(loc.attributeLabel, AppColors.attribute.keys.toList(), widget.filter.attributes),
+          _buildSection(loc.speciesLabel, widget.allSpecies, widget.filter.species),
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('소속 그룹', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Text(loc.groupLabel, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 OutlinedButton(
                   onPressed: _openGroupPage,
                   child: Text(
-                    widget.filter.groups.isEmpty ? '그룹 선택' : '그룹 (${widget.filter.groups.length}개 선택됨)',
+                    widget.filter.groups.isEmpty
+                        ? loc.selectGroupButton
+                        : loc.selectGroupButtonWithCount(widget.filter.groups.length),
                     style: const TextStyle(fontSize: 14),
                   ),
                 ),
@@ -195,20 +199,21 @@ class _GroupFilterPageState extends State<_GroupFilterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     final filtered = widget.allGroups
         .where((g) => _query.trim().isEmpty || g.contains(_query.trim()))
         .toList();
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('소속 그룹 (${widget.selected.length}개 선택)'),
+        title: Text(loc.groupFilterPageTitle(widget.selected.length)),
         actions: [
           TextButton(
             onPressed: () {
               setState(widget.selected.clear);
               widget.onChanged();
             },
-            child: const Text('초기화', style: TextStyle(fontSize: 16)),
+            child: Text(loc.resetButton, style: const TextStyle(fontSize: 16)),
           ),
         ],
       ),
@@ -218,8 +223,8 @@ class _GroupFilterPageState extends State<_GroupFilterPage> {
             padding: const EdgeInsets.all(16),
             child: TextField(
               style: const TextStyle(fontSize: 16),
-              decoration: const InputDecoration(
-                hintText: '그룹명 검색',
+              decoration: InputDecoration(
+                hintText: loc.groupSearchHint,
                 isDense: true,
               ),
               onChanged: (v) => setState(() => _query = v),

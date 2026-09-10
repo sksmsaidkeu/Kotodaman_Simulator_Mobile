@@ -1,0 +1,102 @@
+{
+  "@@locale": "ko",
+
+  "appTitle": "코토다망 최장 단어 탐색기",
+
+  "deckEditorTitle": "코토다망 덱 편성",
+  "screenshotImportButton": "스크린샷으로\n불러오기",
+  "dataLoadError": "데이터 로딩 실패: {error}",
+  "@dataLoadError": { "placeholders": { "error": { "type": "String" } } },
+  "updateAvailableBanner": "새 버전 {version}이 있습니다.",
+  "@updateAvailableBanner": { "placeholders": { "version": { "type": "String" } } },
+  "updateActionNow": "업데이트",
+  "updateActionLater": "나중에",
+  "updateDownloadingTitle": "업데이트 다운로드 중",
+  "updateFailedMessage": "업데이트 실패: {error}",
+  "@updateFailedMessage": { "placeholders": { "error": { "type": "String" } } },
+  "alreadyInDeckMessage": "이미 덱에 있는 캐릭터입니다.",
+  "deckFullMessage": "덱은 최대 {max}명까지 편성할 수 있습니다.",
+  "@deckFullMessage": { "placeholders": { "max": { "type": "int" } } },
+  "deckRestrictionConflictMessage": "같은 그룹의 캐릭터는 동시에 편성할 수 없습니다.",
+  "emptyDeckMessage": "저장할 덱이 비어 있습니다.",
+  "presetSavedMessage": "\"{name}\" 저장했습니다.",
+  "@presetSavedMessage": { "placeholders": { "name": { "type": "String" } } },
+  "deckNameDialogTitle": "덱 이름",
+  "cancelButton": "취소",
+  "saveButton": "저장",
+  "screenshotDeckReplacedMessage": "스크린샷 인식 결과로 덱을 교체했습니다 ({count}명).",
+  "@screenshotDeckReplacedMessage": { "placeholders": { "count": { "type": "int" } } },
+  "deckSectionHeader": "덱 ({count}/{max})",
+  "@deckSectionHeader": {
+    "placeholders": { "count": { "type": "int" }, "max": { "type": "int" } }
+  },
+  "characterSearchLabel": "캐릭터 검색 (이름 · 별칭)",
+  "addCharacterHint": "아래 목록에서 캐릭터를 탭해 덱에 추가하세요.",
+  "savePresetButton": "덱 저장",
+  "filterButton": "필터",
+  "filterButtonWithCount": "필터({count})",
+  "@filterButtonWithCount": { "placeholders": { "count": { "type": "int" } } },
+  "searchWithDeckButton": "이 덱으로 검색하기",
+
+  "removeCharacterTooltip": "{name} (탭해서 제외)",
+  "@removeCharacterTooltip": { "placeholders": { "name": { "type": "String" } } },
+
+  "filterSheetTitle": "필터",
+  "resetButton": "초기화",
+  "gradeLabel": "등급",
+  "attributeLabel": "속성",
+  "speciesLabel": "종족",
+  "groupLabel": "소속 그룹",
+  "selectGroupButton": "그룹 선택",
+  "selectGroupButtonWithCount": "그룹 ({count}개 선택됨)",
+  "@selectGroupButtonWithCount": { "placeholders": { "count": { "type": "int" } } },
+  "groupFilterPageTitle": "소속 그룹 ({count}개 선택)",
+  "@groupFilterPageTitle": { "placeholders": { "count": { "type": "int" } } },
+  "groupSearchHint": "그룹명 검색",
+
+  "wordSearchTitle": "단어 검색",
+  "boardInputLabel": "판 입력 (7칸, 빈칸은 비우거나 _)",
+  "boardInputHint": "예: あい__かん_ (한글로 쳐도 자동 변환)",
+  "handSelectionLabel": "손패 선택 ({selected}/{max}, 덱 {deckSize}명 중)",
+  "@handSelectionLabel": {
+    "placeholders": {
+      "selected": { "type": "int" },
+      "max": { "type": "int" },
+      "deckSize": { "type": "int" }
+    }
+  },
+  "handFullMessage": "손패는 최대 4명까지 선택할 수 있습니다.",
+  "searchButton": "검색",
+  "handResultsTitle": "손패 기준 ({count}명)",
+  "@handResultsTitle": { "placeholders": { "count": { "type": "int" } } },
+  "deckResultsTitle": "덱 기준 ({count}명)",
+  "@deckResultsTitle": { "placeholders": { "count": { "type": "int" } } },
+  "lengthTileTitle": "{length}글자 ({count}개)",
+  "@lengthTileTitle": {
+    "placeholders": { "length": { "type": "int" }, "count": { "type": "int" } }
+  },
+  "noResultsMessage": "결과 없음",
+  "comboCountLabel": "콤보 {count}",
+  "@comboCountLabel": { "placeholders": { "count": { "type": "int" } } },
+
+  "screenshotRecognitionTitle": "스크린샷으로 덱 불러오기",
+  "pickScreenshotButton": "갤러리에서 스크린샷 선택",
+  "recognitionAccuracyWarning": "인식 결과가 정확하지 않을 수 있습니다. 적용 전 확인 화면에서 꼭 검토해 주세요.",
+  "gridShapeLabel": "그리드 형태",
+  "selectGridAreaHint": "캐릭터 12칸이 있는 덱 영역을 드래그해서 지정하세요.",
+  "startRecognitionButton": "이 영역으로 인식 시작",
+  "templatePreparingMessage": "캐릭터 템플릿 준비 중... (최초 1회, 다소 걸릴 수 있음)",
+  "templateProgressMessage": "템플릿 준비 중... {done}/{total}",
+  "@templateProgressMessage": {
+    "placeholders": { "done": { "type": "int" }, "total": { "type": "int" } }
+  },
+  "slotProgressMessage": "슬롯 인식 중... {current}/{total}",
+  "@slotProgressMessage": {
+    "placeholders": { "current": { "type": "int" }, "total": { "type": "int" } }
+  },
+  "confirmApplyButton": "확정 — 덱에 반영",
+  "slotLabel": "슬롯 {number}",
+  "@slotLabel": { "placeholders": { "number": { "type": "int" } } },
+  "noCandidatesMessage": "일치하는 후보가 없습니다.",
+  "skipLabel": "제외"
+}

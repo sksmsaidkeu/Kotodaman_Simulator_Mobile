@@ -7,6 +7,8 @@ import 'character_avatar.dart';
 import 'character_filter_sheet.dart';
 import 'deck_preset_store.dart';
 import 'deck_recognition/deck_recognition_page.dart';
+import 'l10n/app_localizations.dart';
+import 'language_toggle_button.dart';
 import 'update_checker.dart';
 import 'word_search_page.dart';
 
@@ -42,11 +44,27 @@ class _DeckEditorPageState extends State<DeckEditorPage> {
   String _searchQuery = '';
   List<DeckPreset> _presets = [];
 
+  String? _loadedLocaleCode;
+
   @override
   void initState() {
     super.initState();
-    _dataFuture = loadAppData();
+    _presetStore.loadAll().then((presets) => setState(() => _presets = presets));
+    checkForUpdate().then((update) {
+      if (update != null && mounted) _showUpdateBanner(update);
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 언어가 ko↔ja/en으로 바뀌면 캐릭터 이름 표시(한국어 오버레이 vs 원문)가 달라지므로 다시 로드한다.
+    final localeCode = Localizations.localeOf(context).languageCode;
+    if (localeCode == _loadedLocaleCode) return;
+    _loadedLocaleCode = localeCode;
+    _dataFuture = loadAppData(useKoreanNames: localeCode == 'ko');
     _dataFuture.then((data) {
+      if (!mounted) return;
       setState(() {
         _allCharacters = data.characters;
         _byId = {for (final c in data.characters) c.id: c};
@@ -55,27 +73,24 @@ class _DeckEditorPageState extends State<DeckEditorPage> {
         _allGroups = data.characters.map((c) => c.groupName).where((g) => g.isNotEmpty).toSet().toList()..sort();
       });
     });
-    _presetStore.loadAll().then((presets) => setState(() => _presets = presets));
-    checkForUpdate().then((update) {
-      if (update != null && mounted) _showUpdateBanner(update);
-    });
   }
 
   void _showUpdateBanner(MobileUpdateInfo update) {
+    final loc = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).showMaterialBanner(
       MaterialBanner(
-        content: Text('새 버전 ${update.version}이 있습니다.'),
+        content: Text(loc.updateAvailableBanner(update.version)),
         actions: [
           TextButton(
             onPressed: () {
               ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
               _startUpdate(update);
             },
-            child: const Text('업데이트'),
+            child: Text(loc.updateActionNow),
           ),
           TextButton(
             onPressed: () => ScaffoldMessenger.of(context).hideCurrentMaterialBanner(),
-            child: const Text('나중에'),
+            child: Text(loc.updateActionLater),
           ),
         ],
       ),
@@ -83,12 +98,13 @@ class _DeckEditorPageState extends State<DeckEditorPage> {
   }
 
   Future<void> _startUpdate(MobileUpdateInfo update) async {
+    final loc = AppLocalizations.of(context)!;
     final progress = ValueNotifier<double?>(null);
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
-        title: const Text('업데이트 다운로드 중'),
+        title: Text(loc.updateDownloadingTitle),
         content: ValueListenableBuilder<double?>(
           valueListenable: progress,
           builder: (context, value, _) => LinearProgressIndicator(value: value),
@@ -103,7 +119,7 @@ class _DeckEditorPageState extends State<DeckEditorPage> {
         },
       );
     } catch (e) {
-      if (mounted) _showMessage('업데이트 실패: $e');
+      if (mounted) _showMessage(loc.updateFailedMessage('$e'));
     } finally {
       if (mounted) Navigator.of(context, rootNavigator: true).pop();
     }
@@ -131,12 +147,13 @@ class _DeckEditorPageState extends State<DeckEditorPage> {
   }
 
   void _addToDeck(CharacterEntry character) {
+    final loc = AppLocalizations.of(context)!;
     if (_deckOrder.contains(character.id)) {
-      _showMessage('이미 덱에 있는 캐릭터입니다.');
+      _showMessage(loc.alreadyInDeckMessage);
       return;
     }
     if (_deckOrder.length >= _kMaxDeckSize) {
-      _showMessage('덱은 최대 $_kMaxDeckSize명까지 편성할 수 있습니다.');
+      _showMessage(loc.deckFullMessage(_kMaxDeckSize));
       return;
     }
     if (character.deckRestrictionGroupId.isNotEmpty) {
@@ -144,7 +161,7 @@ class _DeckEditorPageState extends State<DeckEditorPage> {
         (c) => c.deckRestrictionGroupId == character.deckRestrictionGroupId,
       );
       if (conflict) {
-        _showMessage('같은 그룹의 캐릭터는 동시에 편성할 수 없습니다.');
+        _showMessage(loc.deckRestrictionConflictMessage);
         return;
       }
     }
@@ -156,8 +173,9 @@ class _DeckEditorPageState extends State<DeckEditorPage> {
   }
 
   Future<void> _savePreset() async {
+    final loc = AppLocalizations.of(context)!;
     if (_deckOrder.isEmpty) {
-      _showMessage('저장할 덱이 비어 있습니다.');
+      _showMessage(loc.emptyDeckMessage);
       return;
     }
     final name = await _promptForName();
@@ -170,7 +188,7 @@ class _DeckEditorPageState extends State<DeckEditorPage> {
       ];
     });
     await _presetStore.saveAll(_presets);
-    _showMessage('"$name" 저장했습니다.');
+    _showMessage(loc.presetSavedMessage(name));
   }
 
   void _loadPreset(DeckPreset preset) {
@@ -187,17 +205,18 @@ class _DeckEditorPageState extends State<DeckEditorPage> {
   }
 
   Future<String?> _promptForName() {
+    final loc = AppLocalizations.of(context)!;
     final controller = TextEditingController();
     return showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('덱 이름'),
+        title: Text(loc.deckNameDialogTitle),
         content: TextField(controller: controller, autofocus: true),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(loc.cancelButton)),
           TextButton(
             onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('저장'),
+            child: Text(loc.saveButton),
           ),
         ],
       ),
@@ -216,13 +235,13 @@ class _DeckEditorPageState extends State<DeckEditorPage> {
     final result = await Navigator.of(context).push<List<String>>(
       MaterialPageRoute(builder: (_) => DeckRecognitionPage(characters: _allCharacters)),
     );
-    if (result == null) return;
+    if (result == null || !mounted) return;
     setState(() {
       _deckOrder
         ..clear()
         ..addAll(result.where(_byId.containsKey).toSet());
     });
-    _showMessage('스크린샷 인식 결과로 덱을 교체했습니다 (${_deckOrder.length}명).');
+    _showMessage(AppLocalizations.of(context)!.screenshotDeckReplacedMessage(_deckOrder.length));
   }
 
   void _openFilterSheet() {
@@ -237,22 +256,24 @@ class _DeckEditorPageState extends State<DeckEditorPage> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('코토다망 덱 편성'),
+        title: Text(loc.deckEditorTitle),
         actions: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             child: OutlinedButton(
               onPressed: _openScreenshotRecognition,
               style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 10)),
-              child: const Text(
-                '스크린샷으로\n불러오기',
+              child: Text(
+                loc.screenshotImportButton,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, height: 1.2),
+                style: const TextStyle(fontSize: 12, height: 1.2),
               ),
             ),
           ),
+          const LanguageToggleButton(),
         ],
       ),
       body: FutureBuilder<AppData>(
@@ -262,7 +283,7 @@ class _DeckEditorPageState extends State<DeckEditorPage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return Center(child: Text('데이터 로딩 실패: ${snapshot.error}'));
+            return Center(child: Text(loc.dataLoadError('${snapshot.error}')));
           }
           return _buildBody(context);
         },
@@ -278,7 +299,9 @@ class _DeckEditorPageState extends State<DeckEditorPage> {
                   onPressed: _openFilterSheet,
                   icon: const Icon(Symbols.filter_alt_rounded, fill: 1),
                   label: Text(
-                    _filter.isEmpty ? '필터' : '필터(${_filter.activeCount})',
+                    _filter.isEmpty
+                        ? loc.filterButton
+                        : loc.filterButtonWithCount(_filter.activeCount),
                     style: const TextStyle(fontSize: _kMinBodyFont),
                   ),
                 ),
@@ -290,7 +313,7 @@ class _DeckEditorPageState extends State<DeckEditorPage> {
                   child: ElevatedButton.icon(
                     onPressed: _deckOrder.isEmpty || _searchService == null ? null : _goToWordSearch,
                     icon: const Icon(Symbols.search_rounded, fill: 1),
-                    label: const Text('이 덱으로 검색하기', style: TextStyle(fontSize: _kMinBodyFont)),
+                    label: Text(loc.searchWithDeckButton, style: const TextStyle(fontSize: _kMinBodyFont)),
                   ),
                 ),
               ),
@@ -302,20 +325,21 @@ class _DeckEditorPageState extends State<DeckEditorPage> {
   }
 
   Widget _buildBody(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: TextField(
             style: const TextStyle(fontSize: _kMinBodyFont),
-            decoration: const InputDecoration(
-              labelText: '캐릭터 검색 (이름 · 별칭)',
+            decoration: InputDecoration(
+              labelText: loc.characterSearchLabel,
               isDense: false,
             ),
             onChanged: (value) => setState(() => _searchQuery = value),
           ),
         ),
-        _buildSectionHeader('덱 (${_deckOrder.length}/$_kMaxDeckSize)'),
+        _buildSectionHeader(loc.deckSectionHeader(_deckOrder.length, _kMaxDeckSize)),
         _buildDeckChips(),
         _buildPresetRow(),
         const Divider(height: 1),
@@ -334,9 +358,12 @@ class _DeckEditorPageState extends State<DeckEditorPage> {
 
   Widget _buildDeckChips() {
     if (_deckOrder.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16),
-        child: Text('아래 목록에서 캐릭터를 탭해 덱에 추가하세요.', style: TextStyle(fontSize: _kMinBodyFont)),
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Text(
+          AppLocalizations.of(context)!.addCharacterHint,
+          style: const TextStyle(fontSize: _kMinBodyFont),
+        ),
       );
     }
     // 12자리를 한 줄로 가로 스크롤하면 뒷부분이 안 보여서 2행×6열로 고정 배치한다
@@ -366,7 +393,10 @@ class _DeckEditorPageState extends State<DeckEditorPage> {
         children: [
           SizedBox(
             height: _kMinTouchTarget,
-            child: ElevatedButton(onPressed: _savePreset, child: const Text('덱 저장')),
+            child: ElevatedButton(
+              onPressed: _savePreset,
+              child: Text(AppLocalizations.of(context)!.savePresetButton),
+            ),
           ),
           for (final preset in _presets)
             Padding(
@@ -397,7 +427,9 @@ class _DeckEditorPageState extends State<DeckEditorPage> {
         final c = list[index];
         final inDeck = _deckOrder.contains(c.id);
         return InkWell(
-          onTap: () => inDeck ? _showMessage('이미 덱에 있는 캐릭터입니다.') : _addToDeck(c),
+          onTap: () => inDeck
+              ? _showMessage(AppLocalizations.of(context)!.alreadyInDeckMessage)
+              : _addToDeck(c),
           child: Opacity(
             opacity: inDeck ? 0.4 : 1,
             child: Column(

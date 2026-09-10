@@ -3,10 +3,10 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:word_search_engine/word_search_engine.dart';
 
 import 'character_avatar.dart';
+import 'l10n/app_localizations.dart';
 
 const double _kMinBodyFont = 16;
 const double _kLetterSlotFont = 20;
-const double _kChipRowHeight = 56;
 const int _kMaxHandSize = 4;
 
 /// PRD_Mobile.md FR-1 — 덱 편집 페이지에서 넘어온 덱(최대 12명)을 대상으로, 판 상태를
@@ -75,7 +75,7 @@ class _WordSearchPageState extends State<WordSearchPage> {
       if (_handIds.length >= _kMaxHandSize) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(content: Text('손패는 최대 4명까지 선택할 수 있습니다.')));
+          ..showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.handFullMessage)));
         return;
       }
       _handIds.add(characterId);
@@ -103,41 +103,41 @@ class _WordSearchPageState extends State<WordSearchPage> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('단어 검색')),
+      appBar: AppBar(title: Text(loc.wordSearchTitle)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text('판 입력 (7칸, 빈칸은 비우거나 _)',
+          Text(loc.boardInputLabel,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: _kMinBodyFont)),
           const SizedBox(height: 4),
           TextField(
             controller: _boardController,
             style: const TextStyle(fontSize: _kLetterSlotFont),
-            decoration: const InputDecoration(
-              hintText: '예: あい__かん_ (한글로 쳐도 자동 변환)',
+            decoration: InputDecoration(
+              hintText: loc.boardInputHint,
               isDense: true,
             ),
           ),
           const SizedBox(height: 16),
-          Text('손패 선택 (${_handIds.length}/$_kMaxHandSize, 덱 ${widget.deck.length}명 중)',
+          Text(loc.handSelectionLabel(_handIds.length, _kMaxHandSize, widget.deck.length),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: _kMinBodyFont)),
           const SizedBox(height: 8),
-          SizedBox(
-            height: _kChipRowHeight,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: widget.deck
-                  .map((c) => Padding(
-                        padding: const EdgeInsets.only(right: 10),
-                        child: SelectableCharacterAvatar(
-                          character: c,
-                          selected: _handIds.contains(c.id),
-                          onTap: () => _toggleHand(c.id),
-                        ),
-                      ))
-                  .toList(),
-            ),
+          GridView.count(
+            crossAxisCount: 6,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 8,
+            children: widget.deck
+                .map((c) => Center(
+                      child: SelectableCharacterAvatar(
+                        character: c,
+                        selected: _handIds.contains(c.id),
+                        onTap: () => _toggleHand(c.id),
+                      ),
+                    ))
+                .toList(),
           ),
           const SizedBox(height: 16),
           SizedBox(
@@ -145,12 +145,14 @@ class _WordSearchPageState extends State<WordSearchPage> {
             child: ElevatedButton.icon(
               onPressed: _runSearch,
               icon: const Icon(Symbols.search_rounded, fill: 1),
-              label: const Text('검색', style: TextStyle(fontSize: _kMinBodyFont)),
+              label: Text(loc.searchButton, style: const TextStyle(fontSize: _kMinBodyFont)),
             ),
           ),
           const SizedBox(height: 16),
-          if (_handGroups != null) ..._buildResultSections('손패 기준 (${_hand.length}명)', _handGroups!),
-          if (_deckGroups != null) ..._buildResultSections('덱 기준 (${widget.deck.length}명)', _deckGroups!),
+          if (_handGroups != null)
+            ..._buildResultSections(loc.handResultsTitle(_hand.length), _handGroups!),
+          if (_deckGroups != null)
+            ..._buildResultSections(loc.deckResultsTitle(widget.deck.length), _deckGroups!),
         ],
       ),
     );
@@ -168,16 +170,18 @@ class _WordSearchPageState extends State<WordSearchPage> {
   }
 
   Widget _buildLengthTile(int length, SearchGroup group) {
+    final loc = AppLocalizations.of(context)!;
     return Card(
       child: ExpansionTile(
-        title: Text('$length글자 (${group.results.length}개)', style: const TextStyle(fontSize: _kMinBodyFont)),
+        title: Text(loc.lengthTileTitle(length, group.results.length),
+            style: const TextStyle(fontSize: _kMinBodyFont)),
         children: group.results.isEmpty
-            ? const [Padding(padding: EdgeInsets.all(12), child: Text('결과 없음'))]
+            ? [Padding(padding: const EdgeInsets.all(12), child: Text(loc.noResultsMessage))]
             : group.results
                 .map((r) => ListTile(
                       dense: true,
                       title: Text(r.word, style: const TextStyle(fontSize: _kLetterSlotFont)),
-                      trailing: Text('콤보 ${r.comboCount}'),
+                      trailing: Text(loc.comboCountLabel(r.comboCount)),
                     ))
                 .toList(),
       ),

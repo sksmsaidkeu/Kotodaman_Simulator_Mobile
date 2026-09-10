@@ -8,6 +8,7 @@ import 'package:opencv_dart/opencv_dart.dart' as cv;
 import 'package:word_search_engine/word_search_engine.dart';
 
 import '../character_avatar.dart';
+import '../l10n/app_localizations.dart';
 import 'attribute_color_detector.dart';
 import 'image_ops.dart';
 import 'letter_template_cache.dart';
@@ -135,12 +136,13 @@ class _DeckRecognitionPageState extends State<DeckRecognitionPage> {
   }
 
   Future<void> _runRecognition(Rect gridRect) async {
-    setState(() => _progressLabel = '캐릭터 템플릿 준비 중... (최초 1회, 다소 걸릴 수 있음)');
+    final loc = AppLocalizations.of(context)!;
+    setState(() => _progressLabel = loc.templatePreparingMessage);
     final templates = await TemplateDescriptorCache.load(
       widget.characters,
       onProgress: (done, total) {
         if (done % 50 != 0 && done != total) return;
-        setState(() => _progressLabel = '템플릿 준비 중... $done/$total');
+        setState(() => _progressLabel = loc.templateProgressMessage(done, total));
       },
     );
 
@@ -189,7 +191,7 @@ class _DeckRecognitionPageState extends State<DeckRecognitionPage> {
 
     final orb = cv.ORB.create(nFeatures: 600);
     for (var i = 0; i < slots.length; i++) {
-      setState(() => _progressLabel = '슬롯 인식 중... ${i + 1}/${slots.length}');
+      setState(() => _progressLabel = loc.slotProgressMessage(i + 1, slots.length));
       final s = slots[i];
       final slotRect = cv.Rect(s.left, s.top, s.width, s.height);
       final region = fullMat.region(slotRect);
@@ -282,7 +284,7 @@ class _DeckRecognitionPageState extends State<DeckRecognitionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('스크린샷으로 덱 불러오기')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)!.screenshotRecognitionTitle)),
       body: switch (_step) {
         _Step.pickImage => _buildPickImage(),
         _Step.selectGrid => _buildSelectGrid(),
@@ -293,6 +295,7 @@ class _DeckRecognitionPageState extends State<DeckRecognitionPage> {
   }
 
   Widget _buildPickImage() {
+    final loc = AppLocalizations.of(context)!;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -302,14 +305,14 @@ class _DeckRecognitionPageState extends State<DeckRecognitionPage> {
             child: ElevatedButton.icon(
               onPressed: _pickImage,
               icon: const Icon(Symbols.photo_library_rounded, fill: 1),
-              label: const Text('갤러리에서 스크린샷 선택', style: TextStyle(fontSize: _kMinBodyFont)),
+              label: Text(loc.pickScreenshotButton, style: const TextStyle(fontSize: _kMinBodyFont)),
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.only(top: 12),
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
             child: Text(
-              '인식 결과가 정확하지 않을 수 있습니다. 적용 전 확인 화면에서 꼭 검토해 주세요.',
-              style: TextStyle(fontSize: 11, color: Colors.grey),
+              loc.recognitionAccuracyWarning,
+              style: const TextStyle(fontSize: 11, color: Colors.grey),
               textAlign: TextAlign.center,
             ),
           ),
@@ -319,13 +322,14 @@ class _DeckRecognitionPageState extends State<DeckRecognitionPage> {
   }
 
   Widget _buildSelectGrid() {
+    final loc = AppLocalizations.of(context)!;
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
           child: Row(
             children: [
-              const Text('그리드 형태', style: TextStyle(fontSize: _kMinBodyFont)),
+              Text(loc.gridShapeLabel, style: const TextStyle(fontSize: _kMinBodyFont)),
               const SizedBox(width: 12),
               SegmentedButton<_GridShape>(
                 segments: _GridShape.values
@@ -337,11 +341,11 @@ class _DeckRecognitionPageState extends State<DeckRecognitionPage> {
             ],
           ),
         ),
-        const Padding(
-          padding: EdgeInsets.all(12),
+        Padding(
+          padding: const EdgeInsets.all(12),
           child: Text(
-            '캐릭터 12칸이 있는 덱 영역을 드래그해서 지정하세요.',
-            style: TextStyle(fontSize: _kMinBodyFont),
+            loc.selectGridAreaHint,
+            style: const TextStyle(fontSize: _kMinBodyFont),
           ),
         ),
         Expanded(
@@ -384,7 +388,7 @@ class _DeckRecognitionPageState extends State<DeckRecognitionPage> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _canConfirmGrid ? _confirmGridAndRecognize : null,
-                child: const Text('이 영역으로 인식 시작', style: TextStyle(fontSize: _kMinBodyFont)),
+                child: Text(loc.startRecognitionButton, style: const TextStyle(fontSize: _kMinBodyFont)),
               ),
             ),
           ),
@@ -410,13 +414,14 @@ class _DeckRecognitionPageState extends State<DeckRecognitionPage> {
   }
 
   Widget _buildReview() {
+    final loc = AppLocalizations.of(context)!;
     return Column(
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(12, 12, 12, 0),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
           child: Text(
-            '인식 결과가 정확하지 않을 수 있습니다. 적용 전 확인 화면에서 꼭 검토해 주세요.',
-            style: TextStyle(fontSize: 11, color: Colors.grey),
+            loc.recognitionAccuracyWarning,
+            style: const TextStyle(fontSize: 11, color: Colors.grey),
           ),
         ),
         Expanded(
@@ -435,7 +440,7 @@ class _DeckRecognitionPageState extends State<DeckRecognitionPage> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _confirmReview,
-                child: const Text('확정 — 덱에 반영', style: TextStyle(fontSize: _kMinBodyFont)),
+                child: Text(loc.confirmApplyButton, style: const TextStyle(fontSize: _kMinBodyFont)),
               ),
             ),
           ),
@@ -445,12 +450,13 @@ class _DeckRecognitionPageState extends State<DeckRecognitionPage> {
   }
 
   Widget _buildSlotReviewRow(int i) {
+    final loc = AppLocalizations.of(context)!;
     final candidates = _slotCandidates[i];
     final byId = {for (final c in widget.characters) c.id: c};
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('슬롯 ${i + 1}', style: const TextStyle(fontSize: _kMinBodyFont, fontWeight: FontWeight.bold)),
+        Text(loc.slotLabel(i + 1), style: const TextStyle(fontSize: _kMinBodyFont, fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
         Wrap(
           spacing: 10,
@@ -461,9 +467,9 @@ class _DeckRecognitionPageState extends State<DeckRecognitionPage> {
           ],
         ),
         if (candidates.isEmpty)
-          const Padding(
-            padding: EdgeInsets.only(top: 4),
-            child: Text('일치하는 후보가 없습니다.', style: TextStyle(fontSize: 13, color: Colors.grey)),
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(loc.noCandidatesMessage, style: const TextStyle(fontSize: 13, color: Colors.grey)),
           ),
       ],
     );
@@ -513,7 +519,8 @@ class _DeckRecognitionPageState extends State<DeckRecognitionPage> {
               backgroundColor: selected ? accent : Colors.grey.shade300,
               child: const Icon(Symbols.block_rounded, fill: 1, color: Colors.white),
             ),
-            const Text('제외', textAlign: TextAlign.center, style: TextStyle(fontSize: 12)),
+            Text(AppLocalizations.of(context)!.skipLabel,
+                textAlign: TextAlign.center, style: const TextStyle(fontSize: 12)),
           ],
         ),
       ),
