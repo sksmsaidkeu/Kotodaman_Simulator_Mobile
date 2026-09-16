@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:word_search_engine/word_search_engine.dart';
 
 import 'app_theme.dart';
+import 'gimmick_status_labels.dart';
 import 'l10n/app_localizations.dart';
 
 /// 데스크톱 `Models/CharacterCategories.All`과 같은 순서(등급) 그대로.
@@ -23,20 +24,32 @@ class CharacterFilter {
   final Set<String> species = {};
   final Set<String> groups = {};
   final Set<String> attributes = {};
+  final Set<String> gimmicks = {};
+  final Set<String> statusResistances = {};
 
-  bool get isEmpty => grades.isEmpty && species.isEmpty && groups.isEmpty && attributes.isEmpty;
+  bool get isEmpty =>
+      grades.isEmpty &&
+      species.isEmpty &&
+      groups.isEmpty &&
+      attributes.isEmpty &&
+      gimmicks.isEmpty &&
+      statusResistances.isEmpty;
 
   int get activeCount =>
       (grades.isNotEmpty ? 1 : 0) +
       (species.isNotEmpty ? 1 : 0) +
       (groups.isNotEmpty ? 1 : 0) +
-      (attributes.isNotEmpty ? 1 : 0);
+      (attributes.isNotEmpty ? 1 : 0) +
+      (gimmicks.isNotEmpty ? 1 : 0) +
+      (statusResistances.isNotEmpty ? 1 : 0);
 
   void clear() {
     grades.clear();
     species.clear();
     groups.clear();
     attributes.clear();
+    gimmicks.clear();
+    statusResistances.clear();
   }
 
   bool matches(CharacterEntry c) {
@@ -44,6 +57,10 @@ class CharacterFilter {
     if (species.isNotEmpty && !species.contains(c.species)) return false;
     if (groups.isNotEmpty && !groups.contains(c.groupName)) return false;
     if (attributes.isNotEmpty && !attributes.contains(c.attribute)) return false;
+    if (gimmicks.isNotEmpty && !c.gimmickCounters.any(gimmicks.contains)) return false;
+    if (statusResistances.isNotEmpty && !c.statusResistances.any(statusResistances.contains)) {
+      return false;
+    }
     return true;
   }
 }
@@ -131,6 +148,18 @@ class _FilterSheetState extends State<_FilterSheet> {
           _buildSection(loc.gradeLabel, kGradeOptions, widget.filter.grades),
           _buildSection(loc.attributeLabel, AppColors.attribute.keys.toList(), widget.filter.attributes),
           _buildSection(loc.speciesLabel, widget.allSpecies, widget.filter.species),
+          _buildSection(
+            loc.gimmickLabel,
+            kGimmickOptions,
+            widget.filter.gimmicks,
+            labelOf: (raw) => gimmickLabel(raw, Localizations.localeOf(context).languageCode),
+          ),
+          _buildSection(
+            loc.statusResistanceLabel,
+            kStatusResistanceOptions,
+            widget.filter.statusResistances,
+            labelOf: (raw) => statusResistanceLabel(raw, Localizations.localeOf(context).languageCode),
+          ),
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: Column(
@@ -156,7 +185,12 @@ class _FilterSheetState extends State<_FilterSheet> {
     );
   }
 
-  Widget _buildSection(String title, List<String> options, Set<String> selected) {
+  Widget _buildSection(
+    String title,
+    List<String> options,
+    Set<String> selected, {
+    String Function(String)? labelOf,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -169,7 +203,7 @@ class _FilterSheetState extends State<_FilterSheet> {
             runSpacing: 8,
             children: options
                 .map((o) => FilterChip(
-                      label: Text(o, style: const TextStyle(fontSize: 14)),
+                      label: Text(labelOf?.call(o) ?? o, style: const TextStyle(fontSize: 14)),
                       selected: selected.contains(o),
                       onSelected: (_) => _toggle(selected, o),
                     ))

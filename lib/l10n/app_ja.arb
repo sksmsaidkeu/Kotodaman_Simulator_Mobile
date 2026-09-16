@@ -36,6 +36,8 @@
   "attributeLabel": "属性",
   "speciesLabel": "種族",
   "groupLabel": "所属グループ",
+  "gimmickLabel": "ギミック対策",
+  "statusResistanceLabel": "状態異常耐性",
   "selectGroupButton": "グループを選択",
   "selectGroupButtonWithCount": "グループ({count}件選択中)",
   "groupFilterPageTitle": "所属グループ({count}件選択中)",

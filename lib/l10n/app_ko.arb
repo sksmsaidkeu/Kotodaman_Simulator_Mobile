@@ -47,6 +47,8 @@
   "attributeLabel": "속성",
   "speciesLabel": "종족",
   "groupLabel": "소속 그룹",
+  "gimmickLabel": "대응 기믹",
+  "statusResistanceLabel": "상태이상 내성",
   "selectGroupButton": "그룹 선택",
   "selectGroupButtonWithCount": "그룹 ({count}개 선택됨)",
   "@selectGroupButtonWithCount": { "placeholders": { "count": { "type": "int" } } },

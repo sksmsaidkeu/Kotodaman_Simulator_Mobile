@@ -36,6 +36,8 @@
   "attributeLabel": "Attribute",
   "speciesLabel": "Species",
   "groupLabel": "Group",
+  "gimmickLabel": "Gimmick Counter",
+  "statusResistanceLabel": "Status Ailment Resistance",
   "selectGroupButton": "Select group",
   "selectGroupButtonWithCount": "Group ({count} selected)",
   "groupFilterPageTitle": "Group ({count} selected)",
