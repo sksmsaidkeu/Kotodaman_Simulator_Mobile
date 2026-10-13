@@ -75,7 +75,8 @@ class _Worker {
 /// (TemplateDescriptorCache와 동일한 전략 — 인식 화면을 다시 열어도 재스폰 없음).
 class _WorkerPool {
   final List<_Worker> workers;
-  _WorkerPool(this.workers);
+  final List<Set<String>> sentIds;
+  _WorkerPool(this.workers) : sentIds = List.generate(workers.length, (_) => <String>{});
 
   int get size => workers.length;
 
@@ -127,21 +128,32 @@ Future<List<MatchScore>> matchTemplatesParallel(
       .map((q) => {'rows': q.rows, 'cols': q.cols, 'bytes': Uint8List.fromList(q.data)})
       .toList();
 
-  final chunkSize = (templates.length / chunkCount).ceil();
+  // 템플릿은 id 해시로 워커에 고정 배정하고, 워커가 아직 모르는 템플릿만 바이트를 실어 보낸다 —
+  // 슬롯마다 2,300명분(수십 MB)을 24개 워커에 복사하면 12슬롯째 근처에서 네이티브 메모리가
+  // 바닥나 앱이 죽었다(4x3 실기기 재현).
+  final chunks = List.generate(chunkCount, (_) => <TemplateDescriptor>[]);
+  for (final t in templates) {
+    chunks[t.id.hashCode % chunkCount].add(t);
+  }
   final futures = <Future<List<Map<String, Object>>>>[];
-  var workerIndex = 0;
-  for (var start = 0; start < templates.length; start += chunkSize) {
-    final end = (start + chunkSize).clamp(0, templates.length).toInt();
-    final chunk = templates.sublist(start, end);
+  for (var w = 0; w < chunkCount; w++) {
+    if (chunks[w].isEmpty) continue;
+    final known = pool.sentIds[w];
     final job = {
       'queries': queryData,
-      'templates': chunk
-          .map((t) => {'id': t.id, 'name': t.name, 'rows': t.rows, 'cols': t.cols, 'bytes': t.bytes})
-          .toList(),
+      'templates': chunks[w].map((t) {
+        final isNew = known.add(t.id);
+        return {
+          'id': t.id,
+          'name': t.name,
+          'rows': t.rows,
+          'cols': t.cols,
+          if (isNew) 'bytes': t.bytes,
+        };
+      }).toList(),
       'keep': keepPerChunk,
     };
-    futures.add(pool.dispatch(workerIndex % pool.size, job));
-    workerIndex++;
+    futures.add(pool.dispatch(w, job));
   }
 
   final chunkResults = await Future.wait(futures);
@@ -245,6 +257,9 @@ List<MatchScore> refineWithReciprocalCrossCheck({
   return scored.take(candidateCount).map((s) => s.$1).toList();
 }
 
+// 워커 isolate 안에서만 쓰이는 템플릿 바이트 캐시(id → 디스크립터 바이트).
+final Map<String, Uint8List> _workerTemplateBytes = {};
+
 /// 워커 isolate의 진입점 — 살아있는 동안 [commandPort]로 들어오는 job을 계속 처리한다
 /// (예전처럼 job 하나 처리하고 isolate째 종료하지 않음).
 void _workerMain(SendPort mainSendPort) {
@@ -281,7 +296,11 @@ List<Map<String, Object>> _matchChunk(Map<String, dynamic> job) {
     final rows = t['rows'] as int;
     final cols = t['cols'] as int;
     if (rows < 2) continue;
-    final trainMat = cv.Mat.fromList(rows, cols, cv.MatType.CV_8UC1, t['bytes'] as Uint8List);
+    final id = t['id'] as String;
+    final bytes = (t['bytes'] as Uint8List?) ?? _workerTemplateBytes[id];
+    if (bytes == null) continue;
+    _workerTemplateBytes[id] = bytes;
+    final trainMat = cv.Mat.fromList(rows, cols, cv.MatType.CV_8UC1, bytes);
 
     // 슬롯 하나당 여러 ROI 쿼리 중 이 템플릿과 가장 잘 맞는 결과를 채택한다
     // (데스크톱 `ScoreTemplate`과 동일 — 인물 아트 위치가 어느 ROI와 맞아떨어지는지 미리
